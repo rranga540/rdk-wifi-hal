@@ -6944,6 +6944,25 @@ static int get_sta_handler(struct nl_msg *msg, void *arg)
     return NL_SKIP;
 }
 
+int nl80211_kick_sta(wifi_interface_info_t *interface, mac_address_t addr)
+{
+    struct nl_msg *msg;
+
+    msg = nl80211_drv_cmd_msg(g_wifi_hal.nl80211_id, interface, 0, NL80211_CMD_DISCONNECT);
+    if (msg == NULL) {
+        return -1;
+    }
+
+    nla_put(msg, NL80211_ATTR_MAC, sizeof(mac_address_t), addr);
+
+    if (nl80211_send_and_recv(msg, kick_device_handler, interface, NULL, NULL)) {
+        wifi_hal_error_print("%s:%d: Error getting sta info\n", __func__, __LINE__);
+        return -1;
+    }
+
+    return 0;
+}
+
 int nl80211_kick_device(wifi_interface_info_t *interface, mac_address_t addr)
 {
     struct nl_msg *msg;

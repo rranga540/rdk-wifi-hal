@@ -1206,6 +1206,30 @@ INT wifi_hal_connect(INT ap_index, wifi_bss_info_t *bss)
     return RETURN_OK;
 }
 
+INT wifi_hal_disconnect_sta(INT ap_index, mac_address_t mac)
+{
+    wifi_interface_info_t *interface;
+    wifi_vap_info_t *vap;
+
+    if ((interface = get_interface_by_vap_index(ap_index)) == NULL) {
+        wifi_hal_error_print("%s:%d:interface for ap index:%d not found\n", __func__, __LINE__, ap_index);
+        return RETURN_ERR;
+    }
+
+    vap = &interface->vap_info;
+    if (vap->vap_mode != wifi_vap_mode_sta) {
+        wifi_hal_error_print("%s:%d:interface for vap index:%d not found\n", __func__, __LINE__, vap->vap_index);
+        return WIFI_HAL_INVALID_ARGUMENTS;     // RDKB-45722 - Returns -4 when the ap index is not suitable for station mode
+    }
+
+    if (nl80211_kick_sta(interface, mac) != 0) {
+        wifi_hal_error_print("%s:%d: Unable to kick MAC %s on ap_index %d\n", __func__, __LINE__,
+            mac, ap_index);
+    }
+
+    return RETURN_OK;
+}
+
 INT wifi_hal_disconnect(INT ap_index)
 {
     wifi_interface_info_t *interface;
