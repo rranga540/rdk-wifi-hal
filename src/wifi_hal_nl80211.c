@@ -7008,7 +7008,7 @@ int nl80211_kick_sta(wifi_interface_info_t *interface, mac_address_t addr)
 {
     struct nl_msg *msg;
 
-    msg = nl80211_drv_cmd_msg(g_wifi_hal.nl80211_id, interface, 0, NL80211_CMD_DISCONNECT);
+    msg = nl80211_drv_cmd_msg(g_wifi_hal.nl80211_id, interface, 0, NL80211_CMD_DEL_STATION);
     if (msg == NULL) {
         return -1;
     }
