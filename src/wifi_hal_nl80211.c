@@ -7006,8 +7006,8 @@ int nl80211_kick_sta(wifi_interface_info_t *interface, mac_address_t addr)
 
     nla_put(msg, NL80211_ATTR_MAC, sizeof(mac_address_t), addr);
 
-    if (nl80211_send_and_recv(msg, kick_device_handler, interface, NULL, NULL)) {
-        wifi_hal_error_print("%s:%d: Ravi Error kicking sta info: %s\n", __func__, __LINE__, strerror(errno));
+    if (nl80211_send_and_recv(msg, &g_wifi_hal, interface, NULL, NULL)) {
+        wifi_hal_error_print("%s:%d: Error kicking sta info\n", __func__, __LINE__);
         return -1;
     }
 
