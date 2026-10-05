@@ -4750,10 +4750,16 @@ void wifi_hal_disassoc(int vap_index, int status, uint8_t *mac)
     u8 own_addr[ETH_ALEN];
     wifi_interface_info_t *interface = get_interface_by_vap_index(vap_index);
     struct hostapd_data *hapd = &interface->u.ap.hapd;
+    struct sta_info *sta;
 
     pthread_mutex_lock(&g_wifi_hal.hapd_lock);
     memcpy(own_addr, hapd->own_addr, ETH_ALEN);
     pthread_mutex_unlock(&g_wifi_hal.hapd_lock);
+
+    sta = ap_get_sta(hapd, mac);
+    if (sta != NULL) {
+        sta->flags &= ~WLAN_STA_ASSOC;
+    }
 
     wifi_drv_sta_disassoc(interface, own_addr, mac, status);
 }
