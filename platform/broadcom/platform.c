@@ -3990,7 +3990,7 @@ INT wifi_getApAssociatedDeviceDiagnosticResult3(INT apIndex,
     }
 
     if (interface != NULL) {
-        wifi_hal_stats_dbg_print("%s:%d: if_index and phy_index is %d %d\n", __func__, __LINE__, interface->if_index, interface->phy_index);
+        wifi_hal_stats_dbg_print("%s:%d: if_index and phy_index is %d %d\n", __func__, __LINE__, interface->index, interface->phy_index);
     }
     ret = get_sta_list(interface, &sta_list);
     if (ret != RETURN_OK) {
