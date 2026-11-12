@@ -3954,6 +3954,9 @@ static int get_sta_stats(wifi_interface_info_t *interface, mac_address_t mac,
         return RETURN_ERR;
     }
 
+    if (interface != NULL) {
+        wifi_hal_stats_dbg_print("%s:%d: if_index and phy_index is %d %d\n", __func__, __LINE__, interface->if_index, interface->phy_index);
+    }
     nlattr = nla_nest_start(msg, NL80211_ATTR_VENDOR_DATA);
     if (nla_put(msg, RDK_VENDOR_ATTR_MAC, ETHER_ADDR_LEN, mac) < 0) {
         wifi_hal_stats_error_print("%s:%d Failed to put mac address\n", __func__, __LINE__);
@@ -3986,6 +3989,9 @@ INT wifi_getApAssociatedDeviceDiagnosticResult3(INT apIndex,
         return RETURN_ERR;
     }
 
+    if (interface != NULL) {
+        wifi_hal_stats_dbg_print("%s:%d: if_index and phy_index is %d %d\n", __func__, __LINE__, interface->if_index, interface->phy_index);
+    }
     ret = get_sta_list(interface, &sta_list);
     if (ret != RETURN_OK) {
         wifi_hal_stats_error_print("%s:%d Failed to get sta list\n", __func__, __LINE__);

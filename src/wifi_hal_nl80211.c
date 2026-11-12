@@ -7756,6 +7756,9 @@ static int get_sta_handler(struct nl_msg *msg, void *arg)
 
     interface = (wifi_interface_info_t *)arg;
 
+    if (interface != NULL) {
+        wifi_hal_stats_dbg_print("%s:%d: if_index and phy_index is %d %d\n", __func__, __LINE__, interface->if_index, interface->phy_index);
+    }
     memset(&associated_dev, 0, sizeof(associated_dev));
     associated_dev.cli_Active = true;
 
