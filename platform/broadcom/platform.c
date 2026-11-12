@@ -3955,7 +3955,7 @@ static int get_sta_stats(wifi_interface_info_t *interface, mac_address_t mac,
     }
 
     if (interface != NULL) {
-        wifi_hal_stats_dbg_print("%s:%d: if_index and phy_index is %d %d\n", __func__, __LINE__, interface->if_index, interface->phy_index);
+        wifi_hal_stats_dbg_print("%s:%d: if_index and phy_index is %d %d\n", __func__, __LINE__, interface->index, interface->phy_index);
     }
     nlattr = nla_nest_start(msg, NL80211_ATTR_VENDOR_DATA);
     if (nla_put(msg, RDK_VENDOR_ATTR_MAC, ETHER_ADDR_LEN, mac) < 0) {
