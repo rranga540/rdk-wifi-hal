@@ -3005,6 +3005,35 @@ static void process_ignite_sta_eapol(wifi_hal_priv_t *priv)
 }
 #endif
 
+#ifdef WIFI_EMULATOR_CHANGE
+/*
+ * Length of the 802.11 data header plus LLC/SNAP up to (not including) the
+ * EtherType. Emulated clients send plain Data (24-byte header) when the AP
+ * has WMM disabled and QoS Data (26-byte header) otherwise.
+ */
+static size_t emu_80211_data_llc_offset(const unsigned char *frame, size_t frame_len)
+{
+    u16 fc;
+    size_t hdr_len = 24;
+
+    if (frame_len < 24) {
+        return 0;
+    }
+    fc = WPA_GET_LE16(frame);
+    if ((fc & (WLAN_FC_TODS | WLAN_FC_FROMDS)) == (WLAN_FC_TODS | WLAN_FC_FROMDS)) {
+        hdr_len += ETH_ALEN;
+    }
+    if (WLAN_FC_GET_STYPE(fc) & 0x08) {
+        hdr_len += 2;
+        if (fc & 0x8000) { /* +HTC (Order) */
+            hdr_len += 4;
+        }
+    }
+    /* LLC/SNAP: AA AA 03 00 00 00 */
+    return hdr_len + 6;
+}
+#endif
+
 void recv_data_frame(wifi_interface_info_t *interface)
 {
     unsigned char buff[2048];
@@ -3060,7 +3089,13 @@ void recv_data_frame(wifi_interface_info_t *interface)
         if (ethhdr.h_proto == ntohs(9002) && memcmp(ethhdr.h_dest, emu_medium_mac, ETH_ALEN) == 0) {
             u16 g_rtap = WPA_GET_BE16(buff + sizeof(struct ethhdr) + 2);
             size_t g_shift = sizeof(struct ethhdr) + ntohs(g_rtap);
-            if ((size_t)buflen < g_shift + 34 || WPA_GET_BE16(buff + g_shift + 32) != ETH_P_EAPOL) {
+            size_t g_llc;
+            if ((size_t)buflen <= g_shift) {
+                return;
+            }
+            g_llc = emu_80211_data_llc_offset(buff + g_shift, buflen - g_shift);
+            if (g_llc == 0 || (size_t)buflen < g_shift + g_llc + 2 ||
+                WPA_GET_BE16(buff + g_shift + g_llc) != ETH_P_EAPOL) {
                 return;
             }
         }
@@ -3135,7 +3170,7 @@ void recv_data_frame(wifi_interface_info_t *interface)
             unsigned char *data;
             struct nl_msg *msg;
             struct sta_info *station;
-            size_t shift, len;
+            size_t shift, len, llc_off;
             u16 rtap_len;
             mac_addr_str_t mac_str;
             int proto;
@@ -3143,7 +3178,14 @@ void recv_data_frame(wifi_interface_info_t *interface)
 
             rtap_len = WPA_GET_BE16(buff + sizeof(struct ethhdr) + 2);
             shift = sizeof(struct ethhdr) + ntohs(rtap_len);
+            if ((size_t)buflen <= shift) {
+                return;
+            }
             len  = buflen - shift;
+            llc_off = emu_80211_data_llc_offset(buff + shift, len);
+            if (llc_off == 0 || len < llc_off + 2) {
+                return;
+            }
 
             memcpy(sta, buff + shift + 10, sizeof(mac_address_t));
             //Check if not from us and to us
@@ -3153,10 +3195,12 @@ void recv_data_frame(wifi_interface_info_t *interface)
             }
 
             station = ap_get_sta(&interface->u.ap.hapd, sta);
-            proto = WPA_GET_BE16(buff + shift + 32);
+            proto = WPA_GET_BE16(buff + shift + llc_off);
             if ((proto == ETH_P_EAPOL)) {
-                //Shift for QoS+LLC headers
-                hdr = (struct ieee802_1x_hdr *)(buff + shift + 34);
+                if (len < llc_off + 2 + sizeof(struct ieee802_1x_hdr)) {
+                    return;
+                }
+                hdr = (struct ieee802_1x_hdr *)(buff + shift + llc_off + 2);
 
                 wifi_hal_dbg_print("%s:%d: EAPOL version:%d type:%d length:%d from: %s\n", __func__, __LINE__,
                     hdr->version, hdr->type, hdr->length, to_mac_str(sta, mac_str));
